@@ -136,8 +136,8 @@
                 <button onclick="loadEmail('https://mail.google.com/mail/')" style="width:280px;padding:14px;background:#ea4335;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer">
                     Gmail
                 </button>
-                <button onclick="loadEmail('https://outlook.live.com/mail/')" style="width:280px;padding:14px;background:#0078d4;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer">
-                    Outlook
+                <button onclick="openOutlookApp()" style="width:280px;padding:14px;background:#0078d4;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer">
+                    Open Outlook App
                 </button>
                 <button onclick="loadEmail('https://mail.thecloud.market/')" style="width:280px;padding:14px;background:#1a2340;color:#94a3b8;border:1px solid #334155;border-radius:10px;font-size:13px;cursor:pointer">
                     TCM Webmail (Roundcube)
@@ -201,6 +201,11 @@
             document.getElementById('wv-email').classList.add('active');
             document.getElementById('loader').style.display = 'block';
             emailLoaded = true;
+        }
+
+        function openOutlookApp() {
+            // Open Outlook desktop app via protocol
+            window.open('mailto:', '_blank');
         }
 
         // Hide loader when any webview finishes loading

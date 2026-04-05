@@ -8,7 +8,7 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder --win",
-    "build-win": "electron-builder --win nsis",
+    "build-win": "electron-builder --win nsis --publish never",
     "build-mac": "electron-builder --mac",
     "build-all": "electron-builder --win --mac"
   },

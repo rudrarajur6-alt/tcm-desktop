@@ -1,6 +1,6 @@
 {
   "name": "the-cloud-market",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "main": "main.js",
   "description": "The Cloud Market — Your Workspace. Your Data. Your Cloud.",
   "author": "The Cloud Market <support@thecloud.market>",
@@ -20,7 +20,7 @@
     },
     "win": {
       "target": ["nsis"],
-      "icon": "icon.png"
+      "icon": "icon.ico"
     },
     "mac": {
       "target": ["dmg"],
@@ -34,7 +34,20 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "The Cloud Market"
-    }
+    },
+    "protocols": [
+      {
+        "name": "The Cloud Market",
+        "schemes": ["tcmworkspace"]
+      }
+    ],
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "icon.ico",
+      "icon.png"
+    ]
   },
   "devDependencies": {
     "electron": "^41.1.1",

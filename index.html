@@ -2,218 +2,243 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>The Cloud Market</title>
     <style>
-        * { margin:0; padding:0; box-sizing:border-box; }
-        html, body { height:100%; overflow:hidden; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:#0f1629; }
+        *{margin:0;padding:0;box-sizing:border-box}
+        html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f1629;color:#e2e8f0}
 
-        .app-container {
-            display:flex;
-            height:100vh;
-            padding-top:36px; /* titlebar overlay */
-        }
+        /* ---------- setup / login screen ---------- */
+        .setup{position:fixed;inset:0;background:linear-gradient(135deg,#0f1629 0%,#0a0e1a 100%);display:flex;align-items:center;justify-content:center;padding-top:36px;z-index:1000}
+        .setup-card{background:rgba(26,35,64,0.6);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:40px;width:400px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.4)}
+        .setup-logo{width:72px;height:72px;margin:0 auto 20px;border-radius:18px;background:#22c55e;display:flex;align-items:center;justify-content:center}
+        .setup-logo svg{width:40px;height:40px;fill:#000}
+        .setup h1{color:#fff;font-size:22px;margin-bottom:6px;font-weight:600}
+        .setup .tagline{color:#94a3b8;font-size:13px;margin-bottom:28px}
+        .setup h2{color:#fff;font-size:17px;margin-bottom:10px;font-weight:600}
+        .setup p{color:#94a3b8;font-size:13px;line-height:1.6;margin-bottom:20px}
+        .setup .muted{color:#64748b;font-size:12px;margin-top:16px}
+        .setup input{width:100%;padding:14px 16px;margin-bottom:12px;background:rgba(15,22,41,0.8);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:#e2e8f0;font-size:14px;outline:none;transition:border-color .15s}
+        .setup input:focus{border-color:#22c55e}
+        .setup button{width:100%;padding:14px;background:#22c55e;color:#000;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;margin-top:4px;transition:background .15s}
+        .setup button:hover:not(:disabled){background:#16a34a}
+        .setup button:disabled{opacity:0.6;cursor:not-allowed}
+        .setup .status{margin-top:16px;font-size:13px;min-height:18px}
+        .setup .status.error{color:#ef4444}
+        .setup .status.success{color:#22c55e}
+        .setup .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(34,197,94,0.2);border-top-color:#22c55e;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:8px}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .setup .divider{height:1px;background:rgba(255,255,255,0.06);margin:24px 0}
+        .setup .small-link{color:#22c55e;font-size:12px;background:none;border:none;padding:0;cursor:pointer;text-decoration:underline;width:auto;margin:0}
 
-        /* Sidebar */
-        .sidebar {
-            width:56px;
-            background:#0a0e1a;
-            border-right:1px solid rgba(255,255,255,0.06);
-            display:flex;
-            flex-direction:column;
-            align-items:center;
-            padding-top:12px;
-            gap:4px;
-            flex-shrink:0;
-        }
+        /* ---------- main app ---------- */
+        .app{display:none;height:100vh;padding-top:36px}
+        .app.visible{display:flex}
 
-        .sidebar .tab {
-            width:44px;
-            height:44px;
-            border-radius:10px;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            cursor:pointer;
-            transition:all 0.15s;
-            position:relative;
-        }
-        .sidebar .tab:hover { background:rgba(255,255,255,0.06); }
-        .sidebar .tab.active { background:rgba(34,197,94,0.15); }
-        .sidebar .tab.active::before {
-            content:'';
-            position:absolute;
-            left:0;
-            top:50%;
-            transform:translateY(-50%);
-            width:3px;
-            height:20px;
-            background:#22c55e;
-            border-radius:0 3px 3px 0;
-        }
-        .sidebar .tab svg { width:22px; height:22px; fill:#64748b; transition:fill 0.15s; }
-        .sidebar .tab.active svg { fill:#22c55e; }
-        .sidebar .tab-label {
-            font-size:9px;
-            color:#64748b;
-            text-align:center;
-            margin-top:2px;
-        }
-        .sidebar .tab.active .tab-label { color:#22c55e; }
+        .sidebar{width:56px;background:#0a0e1a;border-right:1px solid rgba(255,255,255,0.06);display:flex;flex-direction:column;align-items:center;padding-top:12px;gap:4px;flex-shrink:0}
+        .tab{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;position:relative}
+        .tab:hover{background:rgba(255,255,255,0.06)}
+        .tab.active{background:rgba(34,197,94,0.15)}
+        .tab.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:20px;background:#22c55e;border-radius:0 3px 3px 0}
+        .tab svg{width:22px;height:22px;fill:#64748b;transition:fill .15s}
+        .tab.active svg{fill:#22c55e}
+        .spacer{flex:1}
 
-        .sidebar .spacer { flex:1; }
+        .content{flex:1;position:relative;background:#0f1629}
+        .panel{position:absolute;inset:0;display:none}
+        .panel.active{display:flex}
+        webview{width:100%;height:100%;border:none}
 
-        /* Main content */
-        .content {
-            flex:1;
-            position:relative;
-        }
-
-        webview {
-            width:100%;
-            height:100%;
-            border:none;
-            display:none;
-        }
-        webview.active { display:flex; }
-
-        /* Loading */
-        .loading {
-            position:absolute;
-            top:50%;
-            left:50%;
-            transform:translate(-50%,-50%);
-            z-index:10;
-        }
-        .spinner {
-            width:32px; height:32px;
-            border:3px solid rgba(34,197,94,0.2);
-            border-top:3px solid #22c55e;
-            border-radius:50%;
-            animation:spin 0.8s linear infinite;
-        }
-        @keyframes spin { to { transform:rotate(360deg); } }
+        .loader-bar{position:absolute;top:0;left:0;right:0;height:2px;background:rgba(34,197,94,0.15);overflow:hidden;z-index:5;display:none}
+        .loader-bar.active{display:block}
+        .loader-bar::after{content:'';position:absolute;left:-40%;width:40%;height:100%;background:#22c55e;animation:slide 1.2s ease-in-out infinite}
+        @keyframes slide{0%{left:-40%}100%{left:100%}}
     </style>
 </head>
 <body>
-    <div class="app-container">
+
+    <!-- =================== setup / link screen =================== -->
+    <div class="setup" id="setup">
+        <div class="setup-card">
+            <div class="setup-logo">
+                <svg viewBox="0 0 24 24"><path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></svg>
+            </div>
+            <h1>The Cloud Market</h1>
+            <p class="tagline">Your workspace in the cloud</p>
+
+            <!-- State: waiting for setup link -->
+            <div id="state-await">
+                <h2>Welcome</h2>
+                <p>Click the one-click setup link in your welcome email to sign in automatically.</p>
+                <div class="divider"></div>
+                <p style="font-size:12px">Didn't get the email, or lost the link?</p>
+                <input type="email" id="reissue-email" placeholder="your@email.com" autocomplete="email">
+                <button id="reissue-btn">Send me a new link</button>
+                <div class="status" id="reissue-status"></div>
+            </div>
+
+            <!-- State: consuming token -->
+            <div id="state-consuming" style="display:none">
+                <h2>Setting up your workspace</h2>
+                <p><span class="spinner"></span>Signing you in…</p>
+            </div>
+
+            <!-- State: error -->
+            <div id="state-error" style="display:none">
+                <h2>Something went wrong</h2>
+                <p id="error-msg" class="status error"></p>
+                <button id="retry-btn">Try again</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================== main workspace =================== -->
+    <div class="app" id="main-app">
         <div class="sidebar">
-            <!-- Email -->
-            <div class="tab" id="tab-email" onclick="switchTab('email')" title="Email">
+            <div class="tab active" id="tab-email" onclick="switchTab('email')" title="Email">
                 <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
             </div>
-
-            <!-- Files -->
-            <div class="tab active" id="tab-files" onclick="switchTab('files')" title="Files">
+            <div class="tab" id="tab-files" onclick="switchTab('files')" title="Files">
                 <svg viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
             </div>
-
-            <!-- Calendar -->
             <div class="tab" id="tab-calendar" onclick="switchTab('calendar')" title="Calendar">
                 <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM9 10H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z"/></svg>
             </div>
-
-            <!-- Talk -->
             <div class="tab" id="tab-talk" onclick="switchTab('talk')" title="Talk">
-                <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/><path d="M7 9h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2z"/></svg>
+                <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
             </div>
-
             <div class="spacer"></div>
-
-            <!-- More/Dashboard -->
-            <div class="tab" id="tab-more" onclick="switchTab('more')" title="Workspace">
+            <div class="tab" id="tab-more" onclick="switchTab('more')" title="Dashboard">
                 <svg viewBox="0 0 24 24"><path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z"/></svg>
             </div>
         </div>
-
         <div class="content">
-            <div class="loading" id="loader"><div class="spinner"></div></div>
-
-            <div id="email-picker" class="" style="width:100%;height:100%;background:#0f1629;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:40px">
-                <svg viewBox="0 0 24 24" style="width:48px;height:48px;fill:#22c55e;margin-bottom:8px"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
-                <h2 style="color:#fff;font-size:20px;margin:0">Open Your Email</h2>
-                <p style="color:#94a3b8;font-size:13px;margin:0">Choose your email provider</p>
-                <button onclick="loadEmail('https://mail.google.com/mail/')" style="width:280px;padding:14px;background:#ea4335;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer">
-                    Gmail
-                </button>
-                <button onclick="openOutlookApp()" style="width:280px;padding:14px;background:#0078d4;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer">
-                    Open Outlook App
-                </button>
-                <button onclick="loadEmail('https://mail.thecloud.market/')" style="width:280px;padding:14px;background:#1a2340;color:#94a3b8;border:1px solid #334155;border-radius:10px;font-size:13px;cursor:pointer">
-                    TCM Webmail (Roundcube)
-                </button>
-            </div>
-            <webview id="wv-email" class="" src="about:blank" partition="persist:tcm-email" style="display:none"></webview>
-            <webview id="wv-files" class="active" src="https://cyberollie.thecloud.market/index.php/apps/files/" partition="persist:tcm"></webview>
-            <webview id="wv-calendar" class="" src="about:blank" partition="persist:tcm"></webview>
-            <webview id="wv-talk" class="" src="about:blank" partition="persist:tcm"></webview>
-            <webview id="wv-more" class="" src="about:blank" partition="persist:tcm"></webview>
+            <div class="loader-bar" id="loader"></div>
+            <div class="panel active" id="panel-email"><webview id="wv-email" src="about:blank" partition="persist:tcm"></webview></div>
+            <div class="panel" id="panel-files"><webview id="wv-files" src="about:blank" partition="persist:tcm"></webview></div>
+            <div class="panel" id="panel-calendar"><webview id="wv-calendar" src="about:blank" partition="persist:tcm"></webview></div>
+            <div class="panel" id="panel-talk"><webview id="wv-talk" src="about:blank" partition="persist:tcm"></webview></div>
+            <div class="panel" id="panel-more"><webview id="wv-more" src="about:blank" partition="persist:tcm"></webview></div>
         </div>
     </div>
 
     <script>
-        const WORKSPACE = 'https://cyberollie.thecloud.market';
-        const tabs = {
-            email: { wv: 'wv-email', url: 'https://mail.thecloud.market/' },
-            files: { wv: 'wv-files', url: WORKSPACE + '/index.php/apps/files/' },
-            calendar: { wv: 'wv-calendar', url: WORKSPACE + '/index.php/apps/calendar/' },
-            talk: { wv: 'wv-talk', url: WORKSPACE + '/index.php/apps/spreed/' },
-            more: { wv: 'wv-more', url: WORKSPACE + '/index.php/apps/dashboard/' },
-        };
+        let creds = null;
+        const loaded = {};
 
-        let loaded = { files: true };
-        let emailLoaded = false;
+        // ---------- state rendering ----------
+        function showState(name) {
+            ['await','consuming','error'].forEach(s => {
+                document.getElementById('state-' + s).style.display = (s === name) ? 'block' : 'none';
+            });
+        }
+
+        function showSetup() {
+            document.getElementById('setup').style.display = 'flex';
+            document.getElementById('main-app').classList.remove('visible');
+        }
+
+        function showApp(c) {
+            creds = c;
+            document.getElementById('setup').style.display = 'none';
+            document.getElementById('main-app').classList.add('visible');
+            loadTab('email');  // default
+        }
+
+        // ---------- tabs ----------
+        function tabUrls() {
+            if (!creds) return {};
+            const nc = creds.nc_url.replace(/\/$/, '');
+            // Everything routes through the tenant's NC instance — one auth, one origin.
+            return {
+                email: nc + '/index.php/apps/mail/',
+                files: nc + '/index.php/apps/files/',
+                calendar: nc + '/index.php/apps/calendar/',
+                talk: nc + '/index.php/apps/spreed/',
+                more: nc + '/index.php/apps/dashboard/',
+            };
+        }
+
+        function loadTab(name) {
+            const urls = tabUrls();
+            if (!urls[name]) return;
+            const wv = document.getElementById('wv-' + name);
+            if (!loaded[name]) {
+                document.getElementById('loader').classList.add('active');
+                wv.src = urls[name];
+                loaded[name] = true;
+                wv.addEventListener('did-finish-load', () => {
+                    document.getElementById('loader').classList.remove('active');
+                }, { once: true });
+            }
+        }
 
         function switchTab(name) {
-            // Hide all webviews and pickers
-            document.querySelectorAll('webview').forEach(wv => wv.classList.remove('active'));
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.getElementById('email-picker').style.display = 'none';
-
+            document.getElementById('panel-' + name).classList.add('active');
             document.getElementById('tab-' + name).classList.add('active');
+            loadTab(name);
+        }
 
-            if (name === 'email') {
-                if (emailLoaded) {
-                    document.getElementById('wv-email').style.display = 'flex';
-                    document.getElementById('wv-email').classList.add('active');
-                } else {
-                    document.getElementById('email-picker').style.display = 'flex';
-                    document.getElementById('email-picker').classList.add('active');
-                }
-                return;
-            }
-
-            // Show selected webview
-            document.getElementById(tabs[name].wv).classList.add('active');
-
-            // Lazy load
-            if (!loaded[name]) {
-                document.getElementById('loader').style.display = 'block';
-                document.getElementById(tabs[name].wv).src = tabs[name].url;
-                loaded[name] = true;
+        // ---------- setup link flow ----------
+        async function consumeToken(token) {
+            showState('consuming');
+            const res = await window.tcm.consumeToken(token);
+            if (res && res.ok) {
+                const state = await window.tcm.getState();
+                showApp(state.creds);
+            } else {
+                document.getElementById('error-msg').textContent = (res && res.error) || 'Setup failed.';
+                showState('error');
             }
         }
 
-        function loadEmail(url) {
-            document.getElementById('email-picker').style.display = 'none';
-            document.getElementById('wv-email').src = url;
-            document.getElementById('wv-email').style.display = 'flex';
-            document.getElementById('wv-email').classList.add('active');
-            document.getElementById('loader').style.display = 'block';
-            emailLoaded = true;
+        async function requestReissue() {
+            const emailInput = document.getElementById('reissue-email');
+            const btn = document.getElementById('reissue-btn');
+            const status = document.getElementById('reissue-status');
+            const email = emailInput.value.trim();
+            if (!email) { status.textContent = 'Enter your email first.'; status.className = 'status error'; return; }
+            btn.disabled = true;
+            status.textContent = 'Sending…';
+            status.className = 'status';
+            const res = await window.tcm.reissue(email);
+            btn.disabled = false;
+            if (res && res.ok) {
+                status.textContent = 'Check your inbox for a new setup link.';
+                status.className = 'status success';
+            } else {
+                status.textContent = (res && res.error) || 'Could not send. Try again shortly.';
+                status.className = 'status error';
+            }
         }
 
-        function openOutlookApp() {
-            // Open Outlook desktop app via protocol
-            window.open('mailto:', '_blank');
-        }
-
-        // Hide loader when any webview finishes loading
-        document.querySelectorAll('webview').forEach(wv => {
-            wv.addEventListener('did-finish-load', () => {
-                document.getElementById('loader').style.display = 'none';
+        // ---------- boot ----------
+        (async () => {
+            // Receive deep-link tokens pushed from main
+            window.tcm.onSetupToken(async (token) => {
+                if (token) await consumeToken(token);
             });
-        });
+
+            // Sign-out triggered from tray
+            window.tcm.onTriggerLogout(() => window.tcm.logout());
+
+            // Wire buttons
+            document.getElementById('reissue-btn').addEventListener('click', requestReissue);
+            document.getElementById('retry-btn').addEventListener('click', () => showState('await'));
+            document.getElementById('reissue-email').addEventListener('keypress', e => {
+                if (e.key === 'Enter') requestReissue();
+            });
+
+            // Check saved state
+            const state = await window.tcm.getState();
+            if (state.authed && state.creds) {
+                showApp(state.creds);
+            } else {
+                showSetup();
+                showState('await');
+            }
+        })();
     </script>
 </body>
 </html>

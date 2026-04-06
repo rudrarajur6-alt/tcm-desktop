@@ -52,6 +52,28 @@
         .loader-bar.active{display:block}
         .loader-bar::after{content:'';position:absolute;left:-40%;width:40%;height:100%;background:#22c55e;animation:slide 1.2s ease-in-out infinite}
         @keyframes slide{0%{left:-40%}100%{left:100%}}
+
+        /* ---------- light mode overrides ---------- */
+        .light{background:#f1f5f9;color:#1e293b}
+        .light .setup{background:linear-gradient(135deg,#f8fafc 0%,#e2e8f0 100%)}
+        .light .setup-card{background:rgba(255,255,255,0.85);border-color:rgba(0,0,0,0.08);box-shadow:0 20px 60px rgba(0,0,0,0.08)}
+        .light .setup h1{color:#0f172a}
+        .light .setup h2{color:#0f172a}
+        .light .setup p{color:#475569}
+        .light .setup .tagline{color:#64748b}
+        .light .setup .muted{color:#94a3b8}
+        .light .setup input{background:rgba(241,245,249,0.9);border-color:rgba(0,0,0,0.1);color:#1e293b}
+        .light .sidebar{background:#fff;border-right-color:rgba(0,0,0,0.06)}
+        .light .tab:hover{background:rgba(0,0,0,0.04)}
+        .light .tab.active{background:rgba(34,197,94,0.1)}
+        .light .tab svg{fill:#94a3b8}
+        .light .content{background:#f1f5f9}
+
+        /* theme toggle button */
+        .theme-toggle{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;margin-bottom:8px}
+        .theme-toggle:hover{background:rgba(255,255,255,0.06)}
+        .light .theme-toggle:hover{background:rgba(0,0,0,0.04)}
+        .theme-toggle svg{width:18px;height:18px;fill:#64748b;transition:fill .15s}
     </style>
 </head>
 <body>
@@ -107,6 +129,10 @@
                 <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
             </div>
             <div class="spacer"></div>
+            <div class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode">
+                <svg id="theme-icon-moon" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg>
+                <svg id="theme-icon-sun" viewBox="0 0 24 24" style="display:none"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0a.996.996 0 0 0 0-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg>
+            </div>
             <div class="tab" id="tab-more" onclick="switchTab('more')" title="Dashboard">
                 <svg viewBox="0 0 24 24"><path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z"/></svg>
             </div>
@@ -124,6 +150,27 @@
     <script>
         let creds = null;
         const loaded = {};
+
+        // ---------- light/dark toggle ----------
+        function applyTheme(mode) {
+            if (mode === 'light') {
+                document.documentElement.classList.add('light');
+                document.getElementById('theme-icon-moon').style.display = 'none';
+                document.getElementById('theme-icon-sun').style.display = '';
+            } else {
+                document.documentElement.classList.remove('light');
+                document.getElementById('theme-icon-moon').style.display = '';
+                document.getElementById('theme-icon-sun').style.display = 'none';
+            }
+        }
+        function toggleTheme() {
+            const isLight = document.documentElement.classList.contains('light');
+            const next = isLight ? 'dark' : 'light';
+            localStorage.setItem('tcm_theme', next);
+            applyTheme(next);
+        }
+        // Restore saved preference (default: dark)
+        applyTheme(localStorage.getItem('tcm_theme') || 'dark');
 
         // ---------- state rendering ----------
         function showState(name) {

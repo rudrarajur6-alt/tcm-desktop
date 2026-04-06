@@ -278,17 +278,9 @@ app.whenReady().then(async () => {
     // ---------- reduce server load: aggressive client-side caching ----------
     const sess = session.fromPartition('persist:tcm');
 
-    // Cache static assets (JS, CSS, images, fonts) on disk up to 500MB.
-    // Nextcloud ships large JS bundles; caching them means the laptop renders
-    // from disk after the first load instead of re-downloading every time.
-    sess.setStoragePath(path.join(app.getPath('userData'), 'tcm-webcache'));
-
-    // Enable the built-in Chromium HTTP cache (enabled by default, but
-    // explicitly setting a generous size guarantees we don't evict early).
-    // 500MB is plenty for the handful of NC apps we embed.
-    try {
-        sess.setPreloads([]);  // no session preloads, just clear the default
-    } catch {}
+    // The persist:tcm partition automatically uses disk cache under userData.
+    // Chromium's HTTP cache is enabled by default — no manual configuration
+    // needed. Static assets (JS/CSS/fonts) get cached on first load.
 
     // Cache service-worker and offline-capable NC resources
     sess.webRequest.onHeadersReceived((details, cb) => {

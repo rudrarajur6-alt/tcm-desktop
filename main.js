@@ -158,6 +158,26 @@ ipcMain.handle('tcm:reissue', async (_e, email) => {
     }
 });
 
+// Manual sign-in fallback — used while the magic-link backend is being built,
+// and as an escape hatch for users who can't receive the setup link.
+ipcMain.handle('tcm:manual-login', async (_e, { nc_url, nc_user, nc_pass }) => {
+    try {
+        const creds = {
+            nc_url: nc_url.replace(/\/$/, ''),
+            nc_user: nc_user,
+            nc_app_password: nc_pass,
+            display_name: nc_user.split('@')[0],
+            email: nc_user,
+        };
+        saveCredentials(creds);
+        authedCreds = creds;
+        installNcAuth(creds);
+        return { ok: true };
+    } catch (e) {
+        return { ok: false, error: e.message || String(e) };
+    }
+});
+
 ipcMain.handle('tcm:logout', async () => {
     clearCredentials();
     try {

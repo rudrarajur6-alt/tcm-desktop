@@ -168,6 +168,12 @@
             const next = isLight ? 'dark' : 'light';
             localStorage.setItem('tcm_theme', next);
             applyTheme(next);
+            // Sync theme into all loaded webviews
+            document.querySelectorAll('webview').forEach(wv => {
+                if (wv.src && wv.src !== 'about:blank') {
+                    injectWebviewCSS(wv);
+                }
+            });
         }
         // Restore saved preference (default: dark)
         applyTheme(localStorage.getItem('tcm_theme') || 'dark');
@@ -205,6 +211,31 @@
             };
         }
 
+        // CSS injected into every NC webview to hide the header bar and sync theme
+        const NC_HIDE_HEADER = `
+            #header, #theming-preview { display: none !important; }
+            #content { margin-top: 0 !important; padding-top: 0 !important; }
+            #body-user #content-vue,
+            #body-user #app-content-vue,
+            #body-user .app-content { margin-top: 0 !important; }
+            main.app-content { height: 100vh !important; }
+        `;
+        const NC_FORCE_DARK = `
+            [data-themes*="light"] body, body { --color-main-background: #0f1629 !important; }
+        `;
+        const NC_FORCE_LIGHT = `
+            [data-themes*="dark"] body, body[data-theme-dark] {
+                --color-main-background: #ffffff !important;
+                --color-main-text: #1e293b !important;
+            }
+        `;
+
+        function injectWebviewCSS(wv) {
+            const theme = localStorage.getItem('tcm_theme') || 'dark';
+            const themeCSS = theme === 'light' ? NC_FORCE_LIGHT : '';
+            wv.insertCSS(NC_HIDE_HEADER + themeCSS).catch(() => {});
+        }
+
         function loadTab(name) {
             const urls = tabUrls();
             if (!urls[name]) return;
@@ -215,7 +246,11 @@
                 loaded[name] = true;
                 wv.addEventListener('did-finish-load', () => {
                     document.getElementById('loader').classList.remove('active');
+                    injectWebviewCSS(wv);
                 }, { once: true });
+                // Re-inject on subsequent navigations within the same webview
+                wv.addEventListener('did-navigate', () => injectWebviewCSS(wv));
+                wv.addEventListener('did-navigate-in-page', () => injectWebviewCSS(wv));
             }
         }
 

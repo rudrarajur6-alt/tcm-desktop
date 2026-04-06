@@ -95,7 +95,7 @@
                 <input type="password" id="login-pass" placeholder="Password" autocomplete="current-password">
                 <button id="login-btn">Sign In</button>
                 <div class="status" id="login-status"></div>
-                <p class="muted">Enter your workspace URL and credentials above.</p>
+                <p class="muted">If your workspace uses SSO, use an <strong>App Password</strong> from Nextcloud Settings → Security.</p>
             </div>
 
             <!-- State: consuming token -->
@@ -289,15 +289,40 @@
                 wv.addEventListener('did-finish-load', () => {
                     document.getElementById('loader').classList.remove('active');
                     injectWebviewCSS(wv);
+                    // Detect auth failure: if the webview landed on NC login page,
+                    // the credentials are wrong. Sign out so user can re-enter.
+                    detectAuthFailure(wv);
                     // Auto-sync email if the mail tab loaded with no accounts
                     if (name === 'email' && !mailSyncAttempted) {
                         checkAndSyncMail(wv);
                     }
                 }, { once: true });
-                // Re-inject on subsequent navigations within the same webview
-                wv.addEventListener('did-navigate', () => injectWebviewCSS(wv));
+                wv.addEventListener('did-navigate', (e) => {
+                    injectWebviewCSS(wv);
+                    // Also detect if navigated to login page mid-session
+                    if (e.url && e.url.includes('/login')) {
+                        detectAuthFailure(wv);
+                    }
+                });
                 wv.addEventListener('did-navigate-in-page', () => injectWebviewCSS(wv));
             }
+        }
+
+        async function detectAuthFailure(wv) {
+            try {
+                const isLoginPage = await wv.executeJavaScript(`
+                    !!(document.querySelector('#body-login') ||
+                       document.querySelector('.login-form') ||
+                       document.querySelector('[name="loginname"]') ||
+                       document.title.includes('Log in'))
+                `);
+                if (isLoginPage) {
+                    console.log('Auth failure detected — NC login page shown. Signing out.');
+                    if (confirm('Sign-in failed — your password may be incorrect.\\n\\nTip: If your workspace uses SSO, go to your Nextcloud Settings → Security → App passwords, create one called "TCM Desktop", and use that password here.\\n\\nSign out and try again?')) {
+                        window.tcm.logout();
+                    }
+                }
+            } catch {}
         }
 
         async function checkAndSyncMail(wv) {

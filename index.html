@@ -236,6 +236,8 @@
             wv.insertCSS(NC_HIDE_HEADER + themeCSS).catch(() => {});
         }
 
+        let mailSyncAttempted = false;
+
         function loadTab(name) {
             const urls = tabUrls();
             if (!urls[name]) return;
@@ -247,11 +249,43 @@
                 wv.addEventListener('did-finish-load', () => {
                     document.getElementById('loader').classList.remove('active');
                     injectWebviewCSS(wv);
+                    // Auto-sync email if the mail tab loaded with no accounts
+                    if (name === 'email' && !mailSyncAttempted) {
+                        checkAndSyncMail(wv);
+                    }
                 }, { once: true });
                 // Re-inject on subsequent navigations within the same webview
                 wv.addEventListener('did-navigate', () => injectWebviewCSS(wv));
                 wv.addEventListener('did-navigate-in-page', () => injectWebviewCSS(wv));
             }
+        }
+
+        async function checkAndSyncMail(wv) {
+            // Wait a moment for NC Mail to render, then check if it shows the empty/setup state
+            setTimeout(async () => {
+                try {
+                    const isEmpty = await wv.executeJavaScript(`
+                        !!(document.querySelector('.app-mail .empty-content') ||
+                           document.querySelector('.mail-setup') ||
+                           document.querySelector('[data-text="No mail accounts"]') ||
+                           document.querySelector('.icon-add') ||
+                           (document.querySelector('#app-content-vue') && !document.querySelector('.envelope-list')))
+                    `);
+                    if (isEmpty) {
+                        mailSyncAttempted = true;
+                        console.log('Email tab empty — auto-syncing mail...');
+                        const res = await window.tcm.resyncMail();
+                        if (res && res.ok) {
+                            // Reload the email tab to show the newly configured account
+                            setTimeout(() => { loaded['email'] = false; wv.src = 'about:blank'; loadTab('email'); }, 2000);
+                        } else {
+                            console.log('Mail resync response:', res);
+                        }
+                    }
+                } catch (e) {
+                    console.log('Mail check skipped:', e.message);
+                }
+            }, 3000);
         }
 
         function switchTab(name) {

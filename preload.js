@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('tcm', {
     consumeToken: (token) => ipcRenderer.invoke('tcm:consume-token', token),
     reissue: (email) => ipcRenderer.invoke('tcm:reissue', email),
     logout: () => ipcRenderer.invoke('tcm:logout'),
+    resyncMail: () => ipcRenderer.invoke('tcm:resync-mail'),
     manualLogin: (creds) => ipcRenderer.invoke('tcm:manual-login', creds),
     onSetupToken: (cb) => {
         ipcRenderer.removeAllListeners('tcm:setup-token');

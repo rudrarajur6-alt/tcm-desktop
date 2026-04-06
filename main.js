@@ -178,6 +178,22 @@ ipcMain.handle('tcm:manual-login', async (_e, { nc_url, nc_user, nc_pass }) => {
     }
 });
 
+// Auto-sync email: called by the renderer when NC Mail tab shows empty.
+// Posts to ragnova with the user's workspace info so the server can run
+// occ mail:account:create on their behalf. No browser session needed.
+ipcMain.handle('tcm:resync-mail', async () => {
+    if (!authedCreds) return { ok: false, error: 'Not signed in' };
+    try {
+        const resp = await postJson(`${RAGNOVA_BASE}/api/setup/resync-mail-app`, {
+            subdomain: new URL(authedCreds.nc_url).host,
+            email: authedCreds.nc_user || authedCreds.email,
+        });
+        return resp || { ok: false, error: 'No response' };
+    } catch (e) {
+        return { ok: false, error: e.message || String(e) };
+    }
+});
+
 ipcMain.handle('tcm:logout', async () => {
     clearCredentials();
     try {

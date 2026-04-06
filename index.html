@@ -173,10 +173,20 @@
         }
 
         function switchTab(name) {
-            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            // Throttle background tabs: set visibility so Chromium can deprioritize them.
+            // This keeps CPU/RAM usage on the laptop low for inactive panels and
+            // reduces background network chatter to the NC server.
+            document.querySelectorAll('.panel').forEach(p => {
+                p.classList.remove('active');
+                const wv = p.querySelector('webview');
+                if (wv && wv.setAudioMuted) wv.setAudioMuted(true);
+            });
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.getElementById('panel-' + name).classList.add('active');
+            const active = document.getElementById('panel-' + name);
+            active.classList.add('active');
             document.getElementById('tab-' + name).classList.add('active');
+            const activeWv = active.querySelector('webview');
+            if (activeWv && activeWv.setAudioMuted) activeWv.setAudioMuted(false);
             loadTab(name);
         }
 

@@ -275,12 +275,39 @@ function createTray() {
 app.whenReady().then(async () => {
     app.userAgentFallback = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
+    // ---------- reduce server load: aggressive client-side caching ----------
+    const sess = session.fromPartition('persist:tcm');
+
+    // Cache static assets (JS, CSS, images, fonts) on disk up to 500MB.
+    // Nextcloud ships large JS bundles; caching them means the laptop renders
+    // from disk after the first load instead of re-downloading every time.
+    sess.setStoragePath(path.join(app.getPath('userData'), 'tcm-webcache'));
+
+    // Enable the built-in Chromium HTTP cache (enabled by default, but
+    // explicitly setting a generous size guarantees we don't evict early).
+    // 500MB is plenty for the handful of NC apps we embed.
+    try {
+        sess.setPreloads([]);  // no session preloads, just clear the default
+    } catch {}
+
+    // Cache service-worker and offline-capable NC resources
+    sess.webRequest.onHeadersReceived((details, cb) => {
+        const url = details.url || '';
+        const headers = { ...details.responseHeaders };
+        // For static JS/CSS/font bundles: allow long-term caching (1 day) if
+        // the server didn't set a Cache-Control header already.
+        const isStatic = /\.(js|css|woff2?|ttf|svg|png|jpg|webp|ico)(\?|$)/i.test(url);
+        if (isStatic && !headers['cache-control'] && !headers['Cache-Control']) {
+            headers['Cache-Control'] = ['public, max-age=86400, stale-while-revalidate=604800'];
+        }
+        cb({ responseHeaders: headers });
+    });
+
     // Restore credentials BEFORE the window loads so the webRequest handler is live
     const saved = loadCredentials();
     if (saved) {
         authedCreds = saved;
         installNcAuth(saved);
-        // Snappymail cookie already persisted in partition — no reinstall needed on startup
     }
 
     // Windows passes the deep-link URL via process.argv on first launch

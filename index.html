@@ -55,10 +55,13 @@
             <!-- State: enter workspace URL -->
             <div id="state-await">
                 <h2>Sign in to your workspace</h2>
-                <input type="text" id="login-server" placeholder="yourcompany.thecloud.market" autocomplete="url" value="">
+                <div style="position:relative">
+                    <input type="text" id="login-server" placeholder="yourcompany" autocomplete="url" value="" style="padding-right:140px">
+                    <span style="position:absolute;right:14px;top:50%;transform:translateY(-50%);color:#64748b;font-size:13px;pointer-events:none">.thecloud.market</span>
+                </div>
                 <button id="login-btn">Sign In</button>
                 <div class="status" id="login-status"></div>
-                <p class="muted">Enter your workspace URL above. Your browser will open to sign in securely.</p>
+                <p class="muted">Enter your workspace name above. Your browser will open to sign in.</p>
                 <div class="divider"></div>
                 <button class="small-link" id="show-manual-btn">Sign in with email &amp; password instead</button>
             </div>
@@ -166,15 +169,28 @@
         // ---------- Login Flow v2 (OIDC / passwordless) ----------
         let pollInterval = null;
 
+        function normalizeServer(input) {
+            let s = input.trim().toLowerCase();
+            // Strip protocol if present
+            s = s.replace(/^https?:\/\//, '');
+            // Strip trailing slashes/paths
+            s = s.split('/')[0];
+            // If just a name (no dots), append .thecloud.market
+            if (!s.includes('.')) {
+                s = s + '.thecloud.market';
+            }
+            return 'https://' + s;
+        }
+
         async function startLoginFlow() {
-            const server = document.getElementById('login-server').value.trim();
+            const raw = document.getElementById('login-server').value.trim();
             const btn = document.getElementById('login-btn');
             const status = document.getElementById('login-status');
-            if (!server) { status.textContent = 'Enter your workspace URL.'; status.className = 'status error'; return; }
+            if (!raw) { status.textContent = 'Enter your workspace name.'; status.className = 'status error'; return; }
             btn.disabled = true;
             status.textContent = 'Connecting\u2026';
             status.className = 'status';
-            const base = server.startsWith('http') ? server : 'https://' + server;
+            const base = normalizeServer(raw);
             const res = await window.tcm.loginFlowStart(base);
             btn.disabled = false;
             if (!res || !res.ok) {

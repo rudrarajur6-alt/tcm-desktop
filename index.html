@@ -187,12 +187,6 @@
             const next = isLight ? 'dark' : 'light';
             localStorage.setItem('tcm_theme', next);
             applyTheme(next);
-            // Sync theme into all loaded webviews
-            document.querySelectorAll('webview').forEach(wv => {
-                if (wv.src && wv.src !== 'about:blank') {
-                    injectWebviewCSS(wv);
-                }
-            });
         }
         // Restore saved preference (default: dark)
         applyTheme(localStorage.getItem('tcm_theme') || 'dark');
@@ -231,69 +225,18 @@
             };
         }
 
-        // CSS injected into every NC webview to hide the header bar and sync theme
+        // CSS injected into NC webviews — ONLY hides the header bar.
+        // No theme overrides — let NC's own theme handle colors to avoid
+        // breaking icons, action menus, and Talk call controls.
         const NC_HIDE_HEADER = `
-            #header, #theming-preview { display: none !important; }
+            #header { display: none !important; }
             #content { margin-top: 0 !important; padding-top: 0 !important; }
             #body-user #content-vue,
-            #body-user #app-content-vue,
-            #body-user .app-content { margin-top: 0 !important; }
-            main.app-content { height: 100vh !important; }
-        `;
-        const NC_FORCE_LIGHT = `
-            body, body[data-theme-dark], body[data-themes*="dark"],
-            #body-user, #body-public, [data-theme-dark] {
-                --color-main-background: #ffffff !important;
-                --color-main-background-blur: rgba(255,255,255,0.8) !important;
-                --color-background-hover: #f3f4f6 !important;
-                --color-background-dark: #e5e7eb !important;
-                --color-main-text: #1e293b !important;
-                --color-text-maxcontrast: #64748b !important;
-                --color-text-light: #475569 !important;
-                --color-border: #e2e8f0 !important;
-                --color-border-dark: #cbd5e1 !important;
-                --color-border-maxcontrast: #94a3b8 !important;
-                --color-primary-element: #22c55e !important;
-                --color-primary-element-hover: #16a34a !important;
-                --color-primary-element-text: #ffffff !important;
-                --color-primary-element-light: rgba(34,197,94,0.1) !important;
-                --color-primary-element-light-hover: rgba(34,197,94,0.15) !important;
-                --color-primary-element-light-text: #15803d !important;
-                color-scheme: light !important;
-            }
-            /* Force light on specific NC elements that use inline dark styles */
-            .app-sidebar, .modal-container, .action-item,
-            .app-navigation, .app-content-list {
-                --color-main-background: #ffffff !important;
-                --color-main-text: #1e293b !important;
-            }
-        `;
-        const NC_FORCE_DARK = `
-            body, #body-user, #body-public {
-                --color-main-background: #0f1629 !important;
-                --color-main-background-blur: rgba(15,22,41,0.8) !important;
-                --color-background-hover: #1a2340 !important;
-                --color-background-dark: #0a0e1a !important;
-                --color-main-text: #e2e8f0 !important;
-                --color-text-maxcontrast: #94a3b8 !important;
-                --color-text-light: #94a3b8 !important;
-                --color-border: rgba(255,255,255,0.06) !important;
-                --color-border-dark: rgba(255,255,255,0.1) !important;
-                --color-border-maxcontrast: rgba(255,255,255,0.2) !important;
-                --color-primary-element: #22c55e !important;
-                --color-primary-element-hover: #16a34a !important;
-                --color-primary-element-text: #000000 !important;
-                --color-primary-element-light: rgba(34,197,94,0.15) !important;
-                --color-primary-element-light-hover: rgba(34,197,94,0.2) !important;
-                --color-primary-element-light-text: #22c55e !important;
-                color-scheme: dark !important;
-            }
+            #body-user #app-content-vue { margin-top: 0 !important; }
         `;
 
         function injectWebviewCSS(wv) {
-            const theme = localStorage.getItem('tcm_theme') || 'dark';
-            const themeCSS = theme === 'light' ? NC_FORCE_LIGHT : NC_FORCE_DARK;
-            wv.insertCSS(NC_HIDE_HEADER + themeCSS).catch(() => {});
+            wv.insertCSS(NC_HIDE_HEADER).catch(() => {});
         }
 
         let mailSyncAttempted = false;

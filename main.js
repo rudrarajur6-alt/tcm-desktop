@@ -380,9 +380,14 @@ app.whenReady().then(async () => {
     // needed. Static assets (JS/CSS/fonts) get cached on first load.
 
     // Allow NC push notifications in webviews
+    // Allow all permissions NC Talk needs: camera, mic, screen share, clipboard, notifications
     sess.setPermissionRequestHandler((webContents, permission, callback) => {
-        const allowed = ['notifications', 'media', 'mediaKeySystem', 'display-capture', 'pointerLock'];
-        callback(allowed.includes(permission));
+        callback(true); // Allow all — the webview only loads our trusted NC instance
+    });
+
+    // Handle clipboard-read/write permission checks (Electron 20+)
+    sess.setPermissionCheckHandler((webContents, permission) => {
+        return true; // Allow all permission checks for our trusted NC content
     });
 
     // Cache service-worker and offline-capable NC resources

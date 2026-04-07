@@ -363,6 +363,12 @@ app.whenReady().then(async () => {
     // Chromium's HTTP cache is enabled by default — no manual configuration
     // needed. Static assets (JS/CSS/fonts) get cached on first load.
 
+    // Allow NC push notifications in webviews
+    sess.setPermissionRequestHandler((webContents, permission, callback) => {
+        const allowed = ['notifications', 'media', 'mediaKeySystem', 'display-capture', 'pointerLock'];
+        callback(allowed.includes(permission));
+    });
+
     // Cache service-worker and offline-capable NC resources
     sess.webRequest.onHeadersReceived((details, cb) => {
         const url = details.url || '';

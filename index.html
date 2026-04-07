@@ -30,55 +30,20 @@
         .setup .divider{height:1px;background:rgba(255,255,255,0.06);margin:24px 0}
         .setup .small-link{color:#22c55e;font-size:12px;background:none;border:none;padding:0;cursor:pointer;text-decoration:underline;width:auto;margin:0}
 
-        /* ---------- main app ---------- */
+        /* ---------- main app — single full-screen webview ---------- */
         .app{display:none;height:100vh;padding-top:36px}
         .app.visible{display:flex}
+        .app webview{width:100%;height:100%;border:none}
 
-        .sidebar{width:56px;background:#0a0e1a;border-right:1px solid rgba(255,255,255,0.06);display:flex;flex-direction:column;align-items:center;padding-top:12px;gap:4px;flex-shrink:0}
-        .tab{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;position:relative}
-        .tab:hover{background:rgba(255,255,255,0.06)}
-        .tab.active{background:rgba(34,197,94,0.15)}
-        .tab.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:20px;background:#22c55e;border-radius:0 3px 3px 0}
-        .tab svg{width:22px;height:22px;fill:#64748b;transition:fill .15s}
-        .tab.active svg{fill:#22c55e}
-        .spacer{flex:1}
-
-        .content{flex:1;position:relative;background:#0f1629}
-        .panel{position:absolute;inset:0;display:none}
-        .panel.active{display:flex}
-        webview{width:100%;height:100%;border:none}
-
-        .loader-bar{position:absolute;top:0;left:0;right:0;height:2px;background:rgba(34,197,94,0.15);overflow:hidden;z-index:5;display:none}
+        .loader-bar{position:fixed;top:36px;left:0;right:0;height:2px;background:rgba(34,197,94,0.15);overflow:hidden;z-index:5;display:none}
         .loader-bar.active{display:block}
         .loader-bar::after{content:'';position:absolute;left:-40%;width:40%;height:100%;background:#22c55e;animation:slide 1.2s ease-in-out infinite}
         @keyframes slide{0%{left:-40%}100%{left:100%}}
-
-        /* ---------- light mode overrides ---------- */
-        .light{background:#f1f5f9;color:#1e293b}
-        .light .setup{background:linear-gradient(135deg,#f8fafc 0%,#e2e8f0 100%)}
-        .light .setup-card{background:rgba(255,255,255,0.85);border-color:rgba(0,0,0,0.08);box-shadow:0 20px 60px rgba(0,0,0,0.08)}
-        .light .setup h1{color:#0f172a}
-        .light .setup h2{color:#0f172a}
-        .light .setup p{color:#475569}
-        .light .setup .tagline{color:#64748b}
-        .light .setup .muted{color:#94a3b8}
-        .light .setup input{background:rgba(241,245,249,0.9);border-color:rgba(0,0,0,0.1);color:#1e293b}
-        .light .sidebar{background:#fff;border-right-color:rgba(0,0,0,0.06)}
-        .light .tab:hover{background:rgba(0,0,0,0.04)}
-        .light .tab.active{background:rgba(34,197,94,0.1)}
-        .light .tab svg{fill:#94a3b8}
-        .light .content{background:#f1f5f9}
-
-        /* theme toggle button */
-        .theme-toggle{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;margin-bottom:8px}
-        .theme-toggle:hover{background:rgba(255,255,255,0.06)}
-        .light .theme-toggle:hover{background:rgba(0,0,0,0.04)}
-        .theme-toggle svg{width:18px;height:18px;fill:#64748b;transition:fill .15s}
     </style>
 </head>
 <body>
 
-    <!-- =================== setup / link screen =================== -->
+    <!-- =================== setup / login screen =================== -->
     <div class="setup" id="setup">
         <div class="setup-card">
             <div class="setup-logo">
@@ -114,13 +79,13 @@
                 <button id="manual-login-btn">Sign In</button>
                 <div class="status" id="manual-status"></div>
                 <div class="divider"></div>
-                <button class="small-link" id="back-to-flow-btn">← Back to easy sign-in</button>
+                <button class="small-link" id="back-to-flow-btn">&larr; Back to easy sign-in</button>
             </div>
 
             <!-- State: consuming token -->
             <div id="state-consuming" style="display:none">
                 <h2>Setting up your workspace</h2>
-                <p><span class="spinner"></span>Signing you in…</p>
+                <p><span class="spinner"></span>Signing you in&hellip;</p>
             </div>
 
             <!-- State: error -->
@@ -132,64 +97,14 @@
         </div>
     </div>
 
-    <!-- =================== main workspace =================== -->
+    <!-- =================== main workspace — single webview =================== -->
     <div class="app" id="main-app">
-        <div class="sidebar">
-            <div class="tab active" id="tab-email" onclick="switchTab('email')" title="Email">
-                <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
-            </div>
-            <div class="tab" id="tab-files" onclick="switchTab('files')" title="Files">
-                <svg viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
-            </div>
-            <div class="tab" id="tab-calendar" onclick="switchTab('calendar')" title="Calendar">
-                <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM9 10H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z"/></svg>
-            </div>
-            <div class="tab" id="tab-talk" onclick="switchTab('talk')" title="Talk">
-                <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
-            </div>
-            <div class="spacer"></div>
-            <div class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode">
-                <svg id="theme-icon-moon" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg>
-                <svg id="theme-icon-sun" viewBox="0 0 24 24" style="display:none"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0a.996.996 0 0 0 0-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg>
-            </div>
-            <div class="tab" id="tab-more" onclick="switchTab('more')" title="Dashboard">
-                <svg viewBox="0 0 24 24"><path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z"/></svg>
-            </div>
-        </div>
-        <div class="content">
-            <div class="loader-bar" id="loader"></div>
-            <div class="panel active" id="panel-email"><webview id="wv-email" src="about:blank" partition="persist:tcm"></webview></div>
-            <div class="panel" id="panel-files"><webview id="wv-files" src="about:blank" partition="persist:tcm"></webview></div>
-            <div class="panel" id="panel-calendar"><webview id="wv-calendar" src="about:blank" partition="persist:tcm"></webview></div>
-            <div class="panel" id="panel-talk"><webview id="wv-talk" src="about:blank" partition="persist:tcm"></webview></div>
-            <div class="panel" id="panel-more"><webview id="wv-more" src="about:blank" partition="persist:tcm"></webview></div>
-        </div>
+        <div class="loader-bar" id="loader"></div>
+        <webview id="wv-main" src="about:blank" partition="persist:tcm" style="width:100%;height:100%"></webview>
     </div>
 
     <script>
         let creds = null;
-        const loaded = {};
-
-        // ---------- light/dark toggle ----------
-        function applyTheme(mode) {
-            if (mode === 'light') {
-                document.documentElement.classList.add('light');
-                document.getElementById('theme-icon-moon').style.display = 'none';
-                document.getElementById('theme-icon-sun').style.display = '';
-            } else {
-                document.documentElement.classList.remove('light');
-                document.getElementById('theme-icon-moon').style.display = '';
-                document.getElementById('theme-icon-sun').style.display = 'none';
-            }
-        }
-        function toggleTheme() {
-            const isLight = document.documentElement.classList.contains('light');
-            const next = isLight ? 'dark' : 'light';
-            localStorage.setItem('tcm_theme', next);
-            applyTheme(next);
-        }
-        // Restore saved preference (default: dark)
-        applyTheme(localStorage.getItem('tcm_theme') || 'dark');
 
         // ---------- state rendering ----------
         function showState(name) {
@@ -208,69 +123,30 @@
             creds = c;
             document.getElementById('setup').style.display = 'none';
             document.getElementById('main-app').classList.add('visible');
-            loadTab('email');  // default
-        }
-
-        // ---------- tabs ----------
-        function tabUrls() {
-            if (!creds) return {};
+            // Load the NC dashboard — user navigates from there using NC's own top bar
             const nc = creds.nc_url.replace(/\/$/, '');
-            // Everything routes through the tenant's NC instance — one auth, one origin.
-            return {
-                email: nc + '/index.php/apps/mail/',
-                files: nc + '/index.php/apps/files/',
-                calendar: nc + '/index.php/apps/calendar/',
-                talk: nc + '/index.php/apps/spreed/',
-                more: nc + '/index.php/apps/dashboard/',
-            };
+            const wv = document.getElementById('wv-main');
+            document.getElementById('loader').classList.add('active');
+            wv.src = nc + '/index.php/apps/dashboard/';
+            wv.addEventListener('did-finish-load', () => {
+                document.getElementById('loader').classList.remove('active');
+                // Auto-sync email if needed
+                checkAndSyncMail();
+            }, { once: true });
         }
 
-        // CSS injected into NC webviews — ONLY hides the header bar.
-        // No theme overrides — let NC's own theme handle colors to avoid
-        // breaking icons, action menus, and Talk call controls.
-        const NC_HIDE_HEADER = `
-            #header { display: none !important; }
-            #content { margin-top: 0 !important; padding-top: 0 !important; }
-            #body-user #content-vue,
-            #body-user #app-content-vue { margin-top: 0 !important; }
-        `;
-
-        function injectWebviewCSS(wv) {
-            wv.insertCSS(NC_HIDE_HEADER).catch(() => {});
-        }
-
+        // ---------- auto mail sync ----------
         let mailSyncAttempted = false;
-
-        function loadTab(name) {
-            const urls = tabUrls();
-            if (!urls[name]) return;
-            const wv = document.getElementById('wv-' + name);
-            if (!loaded[name]) {
-                document.getElementById('loader').classList.add('active');
-                wv.src = urls[name];
-                loaded[name] = true;
-                wv.addEventListener('did-finish-load', () => {
-                    document.getElementById('loader').classList.remove('active');
-                    injectWebviewCSS(wv);
-                    // Detect auth failure: if the webview landed on NC login page,
-                    // the credentials are wrong. Sign out so user can re-enter.
-                    detectAuthFailure(wv);
-                    // Auto-sync email if the mail tab loaded with no accounts
-                    if (name === 'email' && !mailSyncAttempted) {
-                        checkAndSyncMail(wv);
-                    }
-                }, { once: true });
-                wv.addEventListener('did-navigate', (e) => {
-                    injectWebviewCSS(wv);
-                    // Also detect if navigated to login page mid-session
-                    if (e.url && e.url.includes('/login')) {
-                        detectAuthFailure(wv);
-                    }
-                });
-                wv.addEventListener('did-navigate-in-page', () => injectWebviewCSS(wv));
-            }
+        async function checkAndSyncMail() {
+            if (mailSyncAttempted || !creds) return;
+            mailSyncAttempted = true;
+            try {
+                const subdomain = new URL(creds.nc_url).host;
+                await window.tcm.resyncMail();
+            } catch {}
         }
 
+        // ---------- auth failure detection ----------
         async function detectAuthFailure(wv) {
             try {
                 const isLoginPage = await wv.executeJavaScript(`
@@ -280,74 +156,14 @@
                        document.title.includes('Log in'))
                 `);
                 if (isLoginPage) {
-                    console.log('Auth failure detected — NC login page shown. Signing out.');
-                    if (confirm('Sign-in failed — your password may be incorrect.\\n\\nTip: If your workspace uses SSO, go to your Nextcloud Settings → Security → App passwords, create one called "TCM Desktop", and use that password here.\\n\\nSign out and try again?')) {
+                    if (confirm('Sign-in failed.\\n\\nWould you like to sign out and try again?')) {
                         window.tcm.logout();
                     }
                 }
             } catch {}
         }
 
-        async function checkAndSyncMail(wv) {
-            // Wait a moment for NC Mail to render, then check if it shows the empty/setup state
-            setTimeout(async () => {
-                try {
-                    const isEmpty = await wv.executeJavaScript(`
-                        !!(document.querySelector('.app-mail .empty-content') ||
-                           document.querySelector('.mail-setup') ||
-                           document.querySelector('[data-text="No mail accounts"]') ||
-                           document.querySelector('.icon-add') ||
-                           (document.querySelector('#app-content-vue') && !document.querySelector('.envelope-list')))
-                    `);
-                    if (isEmpty) {
-                        mailSyncAttempted = true;
-                        console.log('Email tab empty — auto-syncing mail...');
-                        const res = await window.tcm.resyncMail();
-                        if (res && res.ok) {
-                            // Reload the email tab to show the newly configured account
-                            setTimeout(() => { loaded['email'] = false; wv.src = 'about:blank'; loadTab('email'); }, 2000);
-                        } else {
-                            console.log('Mail resync response:', res);
-                        }
-                    }
-                } catch (e) {
-                    console.log('Mail check skipped:', e.message);
-                }
-            }, 3000);
-        }
-
-        function switchTab(name) {
-            // Throttle background tabs: set visibility so Chromium can deprioritize them.
-            // This keeps CPU/RAM usage on the laptop low for inactive panels and
-            // reduces background network chatter to the NC server.
-            document.querySelectorAll('.panel').forEach(p => {
-                p.classList.remove('active');
-                const wv = p.querySelector('webview');
-                if (wv && wv.setAudioMuted) wv.setAudioMuted(true);
-            });
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            const active = document.getElementById('panel-' + name);
-            active.classList.add('active');
-            document.getElementById('tab-' + name).classList.add('active');
-            const activeWv = active.querySelector('webview');
-            if (activeWv && activeWv.setAudioMuted) activeWv.setAudioMuted(false);
-            loadTab(name);
-        }
-
-        // ---------- setup link flow ----------
-        async function consumeToken(token) {
-            showState('consuming');
-            const res = await window.tcm.consumeToken(token);
-            if (res && res.ok) {
-                const state = await window.tcm.getState();
-                showApp(state.creds);
-            } else {
-                document.getElementById('error-msg').textContent = (res && res.error) || 'Setup failed.';
-                showState('error');
-            }
-        }
-
-        // ---- Login Flow v2 (OIDC / passwordless) ----
+        // ---------- Login Flow v2 (OIDC / passwordless) ----------
         let pollInterval = null;
 
         async function startLoginFlow() {
@@ -356,7 +172,7 @@
             const status = document.getElementById('login-status');
             if (!server) { status.textContent = 'Enter your workspace URL.'; status.className = 'status error'; return; }
             btn.disabled = true;
-            status.textContent = 'Connecting…';
+            status.textContent = 'Connecting\u2026';
             status.className = 'status';
             const base = server.startsWith('http') ? server : 'https://' + server;
             const res = await window.tcm.loginFlowStart(base);
@@ -366,17 +182,13 @@
                 status.className = 'status error';
                 return;
             }
-            // Show polling state
             showState('polling');
-            // Poll every 2 seconds for up to 5 minutes
             let attempts = 0;
             pollInterval = setInterval(async () => {
                 attempts++;
                 if (attempts > 150) { clearInterval(pollInterval); showState('await'); return; }
                 const poll = await window.tcm.loginFlowPoll({
-                    pollEndpoint: res.pollEndpoint,
-                    pollToken: res.pollToken,
-                    base: res.base,
+                    pollEndpoint: res.pollEndpoint, pollToken: res.pollToken, base: res.base,
                 });
                 if (poll && poll.done) {
                     clearInterval(pollInterval);
@@ -396,7 +208,7 @@
             showState('await');
         }
 
-        // ---- Manual login (advanced fallback) ----
+        // ---------- Manual login (advanced fallback) ----------
         async function doManualLogin() {
             const server = document.getElementById('manual-server').value.trim();
             const email = document.getElementById('manual-email').value.trim();
@@ -409,7 +221,7 @@
                 return;
             }
             btn.disabled = true;
-            status.textContent = 'Signing in…';
+            status.textContent = 'Signing in\u2026';
             status.className = 'status';
             const nc_url = server.startsWith('http') ? server : 'https://' + server;
             const res = await window.tcm.manualLogin({ nc_url, nc_user: email, nc_pass: pass });
@@ -425,27 +237,36 @@
 
         // ---------- boot ----------
         (async () => {
-            // Receive deep-link tokens pushed from main
             window.tcm.onSetupToken(async (token) => {
-                if (token) await consumeToken(token);
+                if (token) {
+                    showState('consuming');
+                    const res = await window.tcm.consumeToken(token);
+                    if (res && res.ok) {
+                        const state = await window.tcm.getState();
+                        showApp(state.creds);
+                    } else {
+                        document.getElementById('error-msg').textContent = (res && res.error) || 'Setup failed.';
+                        showState('error');
+                    }
+                }
             });
-
-            // Sign-out triggered from tray
             window.tcm.onTriggerLogout(() => window.tcm.logout());
 
             // Wire buttons
             document.getElementById('login-btn').addEventListener('click', startLoginFlow);
-            document.getElementById('login-server').addEventListener('keypress', e => {
-                if (e.key === 'Enter') startLoginFlow();
-            });
+            document.getElementById('login-server').addEventListener('keypress', e => { if (e.key === 'Enter') startLoginFlow(); });
             document.getElementById('cancel-poll-btn').addEventListener('click', cancelPoll);
             document.getElementById('show-manual-btn').addEventListener('click', () => showState('manual'));
             document.getElementById('back-to-flow-btn').addEventListener('click', () => showState('await'));
             document.getElementById('manual-login-btn').addEventListener('click', doManualLogin);
-            document.getElementById('manual-pass').addEventListener('keypress', e => {
-                if (e.key === 'Enter') doManualLogin();
-            });
+            document.getElementById('manual-pass').addEventListener('keypress', e => { if (e.key === 'Enter') doManualLogin(); });
             document.getElementById('retry-btn').addEventListener('click', () => showState('await'));
+
+            // Listen for auth failures on main webview
+            const wv = document.getElementById('wv-main');
+            wv.addEventListener('did-navigate', (e) => {
+                if (e.url && e.url.includes('/login')) detectAuthFailure(wv);
+            });
 
             // Check saved state
             const state = await window.tcm.getState();

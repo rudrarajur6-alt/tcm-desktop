@@ -353,6 +353,22 @@ function createTray() {
 app.commandLine.appendSwitch('high-dpi-support', '1');
 app.commandLine.appendSwitch('enable-gpu-rasterization');
 
+// Auto-update: check GitHub Releases for new versions on startup
+try {
+    const { autoUpdater } = require('electron-updater');
+    autoUpdater.autoDownload = true;
+    autoUpdater.autoInstallOnAppQuit = true;
+    autoUpdater.on('update-downloaded', () => {
+        // Silently install on next quit — no disruptive prompts
+        console.log('Update downloaded, will install on quit');
+    });
+    app.whenReady().then(() => {
+        setTimeout(() => autoUpdater.checkForUpdatesAndNotify().catch(() => {}), 10000);
+    });
+} catch (e) {
+    // electron-updater not available in dev mode — ignore
+}
+
 app.whenReady().then(async () => {
     app.userAgentFallback = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 

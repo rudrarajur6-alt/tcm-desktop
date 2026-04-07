@@ -15,15 +15,26 @@
   "build": {
     "appId": "market.thecloud.workspace",
     "productName": "The Cloud Market",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "rudrarajur6-alt",
+        "repo": "tcm-desktop"
+      }
+    ],
     "directories": {
       "output": "dist"
     },
     "win": {
-      "target": ["nsis"],
+      "target": [
+        "nsis"
+      ],
       "icon": "icon.ico"
     },
     "mac": {
-      "target": ["dmg"],
+      "target": [
+        "dmg"
+      ],
       "icon": "icon.png",
       "category": "public.app-category.productivity"
     },
@@ -38,7 +49,9 @@
     "protocols": [
       {
         "name": "The Cloud Market",
-        "schemes": ["tcmworkspace"]
+        "schemes": [
+          "tcmworkspace"
+        ]
       }
     ],
     "files": [
@@ -52,5 +65,8 @@
   "devDependencies": {
     "electron": "^41.1.1",
     "electron-builder": "^26.8.1"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.3"
   }
 }

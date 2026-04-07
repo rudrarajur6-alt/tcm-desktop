@@ -6,6 +6,8 @@ contextBridge.exposeInMainWorld('tcm', {
     reissue: (email) => ipcRenderer.invoke('tcm:reissue', email),
     logout: () => ipcRenderer.invoke('tcm:logout'),
     resyncMail: () => ipcRenderer.invoke('tcm:resync-mail'),
+    loginFlowStart: (serverUrl) => ipcRenderer.invoke('tcm:login-flow-start', serverUrl),
+    loginFlowPoll: (opts) => ipcRenderer.invoke('tcm:login-flow-poll', opts),
     manualLogin: (creds) => ipcRenderer.invoke('tcm:manual-login', creds),
     onSetupToken: (cb) => {
         ipcRenderer.removeAllListeners('tcm:setup-token');

@@ -87,15 +87,34 @@
             <h1>The Cloud Market</h1>
             <p class="tagline">Your workspace in the cloud</p>
 
-            <!-- State: waiting for setup link -->
+            <!-- State: enter workspace URL -->
             <div id="state-await">
                 <h2>Sign in to your workspace</h2>
                 <input type="text" id="login-server" placeholder="yourcompany.thecloud.market" autocomplete="url" value="">
-                <input type="email" id="login-email" placeholder="Email address" autocomplete="email">
-                <input type="password" id="login-pass" placeholder="Password" autocomplete="current-password">
                 <button id="login-btn">Sign In</button>
                 <div class="status" id="login-status"></div>
-                <p class="muted">If your workspace uses SSO, use an <strong>App Password</strong> from Nextcloud Settings → Security.</p>
+                <p class="muted">Enter your workspace URL above. Your browser will open to sign in securely.</p>
+                <div class="divider"></div>
+                <button class="small-link" id="show-manual-btn">Sign in with email &amp; password instead</button>
+            </div>
+
+            <!-- State: polling for OIDC completion -->
+            <div id="state-polling" style="display:none">
+                <h2>Waiting for sign-in</h2>
+                <p><span class="spinner"></span>Complete the sign-in in your browser, then come back here.</p>
+                <button id="cancel-poll-btn" style="background:transparent;border:1px solid rgba(255,255,255,0.1);color:#94a3b8;margin-top:16px">Cancel</button>
+            </div>
+
+            <!-- State: manual login (advanced) -->
+            <div id="state-manual" style="display:none">
+                <h2>Manual sign-in</h2>
+                <input type="text" id="manual-server" placeholder="yourcompany.thecloud.market" autocomplete="url">
+                <input type="email" id="manual-email" placeholder="Email address" autocomplete="email">
+                <input type="password" id="manual-pass" placeholder="Password or App Password" autocomplete="current-password">
+                <button id="manual-login-btn">Sign In</button>
+                <div class="status" id="manual-status"></div>
+                <div class="divider"></div>
+                <button class="small-link" id="back-to-flow-btn">← Back to easy sign-in</button>
             </div>
 
             <!-- State: consuming token -->
@@ -180,8 +199,9 @@
 
         // ---------- state rendering ----------
         function showState(name) {
-            ['await','consuming','error'].forEach(s => {
-                document.getElementById('state-' + s).style.display = (s === name) ? 'block' : 'none';
+            ['await','polling','manual','consuming','error'].forEach(s => {
+                const el = document.getElementById('state-' + s);
+                if (el) el.style.display = (s === name) ? 'block' : 'none';
             });
         }
 
@@ -384,12 +404,62 @@
             }
         }
 
-        async function doManualLogin() {
+        // ---- Login Flow v2 (OIDC / passwordless) ----
+        let pollInterval = null;
+
+        async function startLoginFlow() {
             const server = document.getElementById('login-server').value.trim();
-            const email = document.getElementById('login-email').value.trim();
-            const pass = document.getElementById('login-pass').value;
             const btn = document.getElementById('login-btn');
             const status = document.getElementById('login-status');
+            if (!server) { status.textContent = 'Enter your workspace URL.'; status.className = 'status error'; return; }
+            btn.disabled = true;
+            status.textContent = 'Connecting…';
+            status.className = 'status';
+            const base = server.startsWith('http') ? server : 'https://' + server;
+            const res = await window.tcm.loginFlowStart(base);
+            btn.disabled = false;
+            if (!res || !res.ok) {
+                status.textContent = (res && res.error) || 'Could not connect to workspace.';
+                status.className = 'status error';
+                return;
+            }
+            // Show polling state
+            showState('polling');
+            // Poll every 2 seconds for up to 5 minutes
+            let attempts = 0;
+            pollInterval = setInterval(async () => {
+                attempts++;
+                if (attempts > 150) { clearInterval(pollInterval); showState('await'); return; }
+                const poll = await window.tcm.loginFlowPoll({
+                    pollEndpoint: res.pollEndpoint,
+                    pollToken: res.pollToken,
+                    base: res.base,
+                });
+                if (poll && poll.done) {
+                    clearInterval(pollInterval);
+                    const state = await window.tcm.getState();
+                    showApp(state.creds);
+                } else if (poll && !poll.ok) {
+                    clearInterval(pollInterval);
+                    showState('await');
+                    document.getElementById('login-status').textContent = poll.error || 'Sign-in failed.';
+                    document.getElementById('login-status').className = 'status error';
+                }
+            }, 2000);
+        }
+
+        function cancelPoll() {
+            if (pollInterval) clearInterval(pollInterval);
+            showState('await');
+        }
+
+        // ---- Manual login (advanced fallback) ----
+        async function doManualLogin() {
+            const server = document.getElementById('manual-server').value.trim();
+            const email = document.getElementById('manual-email').value.trim();
+            const pass = document.getElementById('manual-pass').value;
+            const btn = document.getElementById('manual-login-btn');
+            const status = document.getElementById('manual-status');
             if (!server || !email || !pass) {
                 status.textContent = 'All three fields are required.';
                 status.className = 'status error';
@@ -421,11 +491,18 @@
             window.tcm.onTriggerLogout(() => window.tcm.logout());
 
             // Wire buttons
-            document.getElementById('login-btn').addEventListener('click', doManualLogin);
-            document.getElementById('retry-btn').addEventListener('click', () => showState('await'));
-            document.getElementById('login-pass').addEventListener('keypress', e => {
+            document.getElementById('login-btn').addEventListener('click', startLoginFlow);
+            document.getElementById('login-server').addEventListener('keypress', e => {
+                if (e.key === 'Enter') startLoginFlow();
+            });
+            document.getElementById('cancel-poll-btn').addEventListener('click', cancelPoll);
+            document.getElementById('show-manual-btn').addEventListener('click', () => showState('manual'));
+            document.getElementById('back-to-flow-btn').addEventListener('click', () => showState('await'));
+            document.getElementById('manual-login-btn').addEventListener('click', doManualLogin);
+            document.getElementById('manual-pass').addEventListener('keypress', e => {
                 if (e.key === 'Enter') doManualLogin();
             });
+            document.getElementById('retry-btn').addEventListener('click', () => showState('await'));
 
             // Check saved state
             const state = await window.tcm.getState();

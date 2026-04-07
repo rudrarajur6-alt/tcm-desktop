@@ -158,8 +158,67 @@ ipcMain.handle('tcm:reissue', async (_e, email) => {
     }
 });
 
-// Manual sign-in fallback — used while the magic-link backend is being built,
-// and as an escape hatch for users who can't receive the setup link.
+// ---- NC Login Flow v2 (passwordless OIDC login) ----
+// 1. POST /login/v2 → {poll: {token, endpoint}, login: URL}
+// 2. Open login URL in system browser → user authenticates via OIDC
+// 3. Poll endpoint until NC returns {server, loginName, appPassword}
+// This is the same flow the official NC desktop client uses.
+
+let loginFlowPollTimer = null;
+
+ipcMain.handle('tcm:login-flow-start', async (_e, serverUrl) => {
+    try {
+        const base = serverUrl.replace(/\/$/, '');
+        const url = `${base}/index.php/login/v2`;
+
+        // Step 1: initiate the flow
+        const initResp = await postJson(url, {});
+        if (!initResp || !initResp.poll || !initResp.login) {
+            return { ok: false, error: 'Server did not return a login flow. Check the workspace URL.' };
+        }
+
+        // Step 2: open login page in system browser
+        shell.openExternal(initResp.login);
+
+        // Step 3: start polling (return immediately, poll in background)
+        const pollToken = initResp.poll.token;
+        const pollEndpoint = initResp.poll.endpoint;
+
+        return { ok: true, pollToken, pollEndpoint, base };
+    } catch (e) {
+        return { ok: false, error: e.message || String(e) };
+    }
+});
+
+ipcMain.handle('tcm:login-flow-poll', async (_e, { pollEndpoint, pollToken, base }) => {
+    try {
+        const resp = await postJson(pollEndpoint, { token: pollToken });
+        if (resp && resp.appPassword && resp.loginName) {
+            // Success! Store credentials
+            const creds = {
+                nc_url: (resp.server || base).replace(/\/$/, ''),
+                nc_user: resp.loginName,
+                nc_app_password: resp.appPassword,
+                display_name: resp.loginName.split('@')[0],
+                email: resp.loginName,
+            };
+            saveCredentials(creds);
+            authedCreds = creds;
+            installNcAuth(creds);
+            return { ok: true, done: true };
+        }
+        // Not ready yet (NC returns 404 while user hasn't logged in)
+        return { ok: true, done: false };
+    } catch (e) {
+        // 404 means "not yet" — keep polling
+        if (String(e).includes('404') || String(e).includes('Not Found')) {
+            return { ok: true, done: false };
+        }
+        return { ok: false, error: e.message || String(e) };
+    }
+});
+
+// Keep manual login as fallback for edge cases
 ipcMain.handle('tcm:manual-login', async (_e, { nc_url, nc_user, nc_pass }) => {
     try {
         const creds = {

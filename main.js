@@ -307,6 +307,8 @@ function createWindow() {
             nodeIntegration: false,
             webviewTag: true,
             webSecurity: true,
+            zoomFactor: 1.0,
+            enableWebSQL: false,
         },
         titleBarStyle: 'hidden',
         titleBarOverlay: {
@@ -346,6 +348,10 @@ function createTray() {
         tray.on('click', () => mainWindow && mainWindow.show());
     } catch {}
 }
+
+// Enable high-DPI rendering and GPU acceleration for crisp text/icons
+app.commandLine.appendSwitch('high-dpi-support', '1');
+app.commandLine.appendSwitch('enable-gpu-rasterization');
 
 app.whenReady().then(async () => {
     app.userAgentFallback = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';

@@ -390,6 +390,26 @@ app.whenReady().then(async () => {
         return true; // Allow all permission checks for our trusted NC content
     });
 
+    // Screen sharing: intercept getDisplayMedia and provide screen sources
+    // via Electron's desktopCapturer. Without this, Talk's screen share fails.
+    const { desktopCapturer } = require('electron');
+    sess.setDisplayMediaRequestHandler(async (request, callback) => {
+        try {
+            const sources = await desktopCapturer.getSources({ types: ['screen', 'window'] });
+            if (sources.length > 0) {
+                // Auto-select the primary screen (first source)
+                // For a proper picker UI, we'd show a dialog — but auto-select
+                // is good enough for now and matches what most users expect.
+                callback({ video: sources[0] });
+            } else {
+                callback({});
+            }
+        } catch (e) {
+            console.error('Screen share failed:', e);
+            callback({});
+        }
+    });
+
     // Cache service-worker and offline-capable NC resources
     sess.webRequest.onHeadersReceived((details, cb) => {
         const url = details.url || '';

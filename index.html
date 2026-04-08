@@ -30,10 +30,9 @@
         .setup .divider{height:1px;background:rgba(255,255,255,0.06);margin:24px 0}
         .setup .small-link{color:#22c55e;font-size:12px;background:none;border:none;padding:0;cursor:pointer;text-decoration:underline;width:auto;margin:0}
 
-        /* ---------- main app — single full-screen webview ---------- */
-        .app{display:none;flex-direction:column;height:100vh;padding-top:36px}
-        .app.visible{display:flex}
-        .app webview{flex:1;width:100%;border:none}
+        /* ---------- main app — always present, behind login overlay ---------- */
+        .app{display:flex;flex-direction:column;position:fixed;top:36px;left:0;right:0;bottom:0}
+        .app webview{flex:1;width:100%;border:none;min-height:0}
 
         .loader-bar{position:fixed;top:36px;left:0;right:0;height:2px;background:rgba(34,197,94,0.15);overflow:hidden;z-index:5;display:none}
         .loader-bar.active{display:block}
@@ -119,22 +118,31 @@
 
         function showSetup() {
             document.getElementById('setup').style.display = 'flex';
-            document.getElementById('main-app').classList.remove('visible');
         }
 
         function showApp(c) {
+            if (!c || !c.nc_url) { showSetup(); showState('await'); return; }
             creds = c;
             document.getElementById('setup').style.display = 'none';
-            document.getElementById('main-app').classList.add('visible');
-            // Load the NC dashboard — user navigates from there using NC's own top bar
             const nc = creds.nc_url.replace(/\/$/, '');
+            const url = nc + '/index.php/apps/dashboard/';
+            console.log('showApp: loading', url);
             const wv = document.getElementById('wv-main');
             document.getElementById('loader').classList.add('active');
-            wv.src = nc + '/index.php/apps/dashboard/';
+            // Force webview to be visible and sized
+            wv.style.display = 'flex';
+            wv.style.minHeight = '100px';
+            wv.src = url;
             wv.addEventListener('did-finish-load', () => {
                 document.getElementById('loader').classList.remove('active');
-                // Auto-sync email if needed
                 checkAndSyncMail();
+            }, { once: true });
+            // If webview fails to load (bad URL, network error), go back to login
+            wv.addEventListener('did-fail-load', (e) => {
+                if (e.errorCode !== -3) { // -3 = aborted (normal), ignore
+                    document.getElementById('loader').classList.remove('active');
+                    window.tcm.logout();
+                }
             }, { once: true });
         }
 

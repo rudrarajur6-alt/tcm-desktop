@@ -133,17 +133,27 @@
             wv.style.display = 'flex';
             wv.style.minHeight = '100px';
             wv.src = url;
+            let loaded = false;
             wv.addEventListener('did-finish-load', () => {
+                loaded = true;
                 document.getElementById('loader').classList.remove('active');
                 checkAndSyncMail();
             }, { once: true });
             // If webview fails to load (bad URL, network error), go back to login
             wv.addEventListener('did-fail-load', (e) => {
-                if (e.errorCode !== -3) { // -3 = aborted (normal), ignore
+                if (e.errorCode !== -3) {
+                    loaded = true;
                     document.getElementById('loader').classList.remove('active');
                     window.tcm.logout();
                 }
             }, { once: true });
+            // Timeout: if nothing loads in 15s, credentials are bad — show login
+            setTimeout(() => {
+                if (!loaded) {
+                    console.log('Webview load timeout — logging out');
+                    window.tcm.logout();
+                }
+            }, 15000);
         }
 
         // ---------- auto mail sync ----------
